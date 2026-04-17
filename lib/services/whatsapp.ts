@@ -1,3 +1,5 @@
+'use server';
+
 import makeWASocket, { 
   DisconnectReason, 
   useMultiFileAuthState, 
@@ -73,13 +75,4 @@ export async function sendWhatsAppMessage(to: string, text: string) {
     console.error(`❌ Failed to send WhatsApp to ${to}:`, err);
     throw err;
   }
-}
-
-/**
- * Generate a "One-Tap" WhatsApp sharing link.
- */
-export function generateWhatsAppShareUrl(phone: string, text: string): string {
-  const encodedText = encodeURIComponent(text);
-  const cleanPhone = phone.replace(/\D/g, '');
-  return `https://wa.me/${cleanPhone}/?text=${encodedText}`;
 }

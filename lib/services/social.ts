@@ -1,4 +1,4 @@
-import { generateWhatsAppShareUrl } from './whatsapp';
+import { generateWhatsAppShareUrl } from './whatsapp-utils';
 
 /**
  * High-fidelity social sharing service for restaurant orders.
