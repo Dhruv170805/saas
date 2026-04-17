@@ -124,7 +124,7 @@ export async function ensureDefaultTenant(settings: {
     _id: 'default',
     slug: 'default',
     name: settings.restaurantName,
-    theme: { primary: '#f37c22', accent: '#ffffff', font: 'Inter' },
+    theme: { primary: '#f37c22', accent: '#ffffff', muted: '#1e293b', font: 'Inter' },
     config: {
       taxEnabled: settings.taxEnabled,
       taxRate: settings.taxRate,

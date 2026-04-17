@@ -70,6 +70,7 @@ export interface DbSettings extends Document {
 export interface DbTenantTheme {
   primary: string   // e.g. "#f37c22"
   accent: string    // e.g. "#ffffff"
+  muted: string     // e.g. "#1e293b"
   font: string      // e.g. "Inter"
 }
 
