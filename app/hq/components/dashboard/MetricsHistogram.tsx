@@ -40,11 +40,15 @@ export const MetricsHistogram: React.FC = () => {
               cursor={{ fill: 'rgba(255,255,255,0.02)' }}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
+                  const data = payload[0].payload;
+                  const value = payload[0].value;
                   return (
                     <div style={{ background: 'rgba(0,0,0,0.9)', border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '0.75rem', backdropFilter: 'blur(20px)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-                      <p className="hq-text-xs hq-text-dim hq-font-black hq-uppercase hq-tracking-widest" style={{ marginBottom: '0.25rem' }}>{payload[0].payload.name}</p>
+                      <p className="hq-text-xs hq-text-dim hq-font-black hq-uppercase hq-tracking-widest" style={{ marginBottom: '0.25rem' }}>
+                        {data?.name || 'Unknown'}
+                      </p>
                       <p className="hq-text-lg hq-font-black hq-text-white hq-tracking-tighter">
-                        {payload[0].value.toLocaleString()} <span style={{ fontSize: '10px', opacity: 0.4 }}>RDS</span>
+                        {typeof value === 'number' ? value.toLocaleString() : (value || '0')} <span style={{ fontSize: '10px', opacity: 0.4 }}>RDS</span>
                       </p>
                     </div>
                   );

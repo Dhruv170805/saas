@@ -59,7 +59,7 @@ function RevenueTooltip({ active, payload, label, currency }: {
     }}>
       <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 4 }}>{label}</div>
       <div style={{ fontWeight: 800, fontSize: 16, color: '#ff6a00' }}>
-        {currency}{payload[0].value.toLocaleString()}
+        {currency}{(payload[0]?.value as number)?.toLocaleString() || '0'}
       </div>
     </div>
   )
