@@ -15,7 +15,7 @@ We measure success through three primary Service Level Indicators:
 | **Availability** | 99.95% | Uptime of `/api/health` over 30 days. |
 | **API Latency** | < 150ms (p95) | Measured at the Cloud Gateway edge. |
 | **Synchronization** | < 50ms (p90) | WebSocket propagation delta (Server → Client). |
-| **Data Durability** | 99.999% | MongoDB Atlas Point-in-Time Recovery success. |
+| **Data Durability** | 99.999% | PostgreSQL Point-in-Time Recovery success. |
 
 ---
 
@@ -24,7 +24,7 @@ We measure success through three primary Service Level Indicators:
 The Nexus infrastructure is built on a **Zero Trust** foundation:
 - **Tenant Context**: Every request is cryptographically bound to a tenant ID via JWT claims.
 - **State Segregation**: Redis L1 cache uses tenant-prefixed keys to prevent cross-talk.
-- **Persistence Isolation**: MongoDB compound indexes `{ tenantId: 1, ... }` ensure physical and logical separation of financial records.
+- **Persistence Isolation**: PostgreSQL Row-Level Security (RLS) policies ensure logical separation of financial records.
 
 ---
 
@@ -80,7 +80,7 @@ Quarterly chaos engineering exercises where we simulate:
 
 | Variable | Priority | Description |
 | :--- | :--- | :--- |
-| `MONGODB_URI` | Critical | Primary Persistence (Atlas). |
+| `DATABASE_URL` | Critical | Primary Persistence (PostgreSQL). |
 | `REDIS_URL` | High | Edge Caching & Session Pinning. |
 | `APP_DOMAIN` | High | Root Domain for Subdomain Discovery. |
 | `METRICS_TOKEN` | Medium | Authentication for Prometheus Scraper. |

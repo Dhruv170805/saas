@@ -2,7 +2,7 @@
 
 [![Engine](https://img.shields.io/badge/Engine-Reactive--SaaS-blueviolet?style=for-the-badge&logoColor=white)](https://nextjs.org)
 [![Latency](https://img.shields.io/badge/RTT-Sub--100ms-green?style=for-the-badge&logoColor=white)](https://socket.io)
-[![Security](https://img.shields.io/badge/Security-Zero--Trust-black?style=for-the-badge&logoColor=white)](https://www.mongodb.com)
+[![Security](https://img.shields.io/badge/Security-Zero--Trust-black?style=for-the-badge&logoColor=white)](https://www.postgresql.org)
 
 Nexus POS is a **high-fidelity, distributed SaaS ecosystem** engineered for the modern restaurant floor. Gone are the days of polling-based legacy ERPs; Nexus leverages a **Reactive Event-Driven Architecture (REDA)** to deliver financial data and kitchen state with sub-100ms latency across global mobile fleets.
 
@@ -94,7 +94,7 @@ The system doesn't just bill; it **learns**. A background worker asynchronously 
 ## 🛠️ Infrastructure Protocol
 
 ### Control Plane (Self-Hosted / Cloud)
-1. **Environment**: Enforce `MONGODB_URI`, `REDIS_URL`, and `APP_DOMAIN`.
+1. **Environment**: Enforce `DATABASE_URL`, `REDIS_URL`, and `APP_DOMAIN`.
 2. **Bootstrap**: `npm install && npm run dev`.
 3. **Migration**: `node scripts/migrate-to-multitenant.mjs` (Atomic Migration).
 

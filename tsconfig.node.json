@@ -13,7 +13,7 @@
   },
   "include": [
     "src/**/*.ts",
-    "lib/**/*.ts"
+    "worker.ts"
   ],
   "exclude": [
     "node_modules",

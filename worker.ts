@@ -7,10 +7,10 @@ dotenv.config({ path: '.env.local' });
 
 import { Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
-import { initWhatsApp } from './lib/services/whatsapp';
-import { processInvoice } from './lib/worker/processors/invoice';
-import { processEmail } from './lib/worker/processors/email';
-import { processDebtRecovery } from './lib/worker/processors/debt_recovery';
+import { initWhatsApp } from './src/services/whatsapp';
+import { processInvoice } from './src/core/worker/processors/invoice';
+import { processEmail } from './src/core/worker/processors/email';
+import { processDebtRecovery } from './src/core/worker/processors/debt_recovery';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -20,7 +20,7 @@ const connection = new IORedis(REDIS_URL, {
 });
 
 // ── Initialize Core Services ──────────────────────────────────────────────────
-initWhatsApp().catch(e => console.error('❌ WhatsApp Init Failed:', e));
+initWhatsApp().catch((e: any) => console.error('❌ WhatsApp Init Failed:', e));
 
 connection.on('connect', () => console.log('🔌 Worker Redis connected'));
 connection.on('error', (e) => console.error('❌ Worker Redis error:', e.message));
