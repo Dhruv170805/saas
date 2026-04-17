@@ -37,9 +37,18 @@ export async function initWhatsApp() {
   sock.ev.on('connection.update', (update: any) => {
     const { connection, lastDisconnect } = update;
     if (connection === 'close') {
-      const shouldReconnect = (lastDisconnect.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-      console.log('🔌 WhatsApp connection closed due to ', lastDisconnect.error, ', reconnecting ', shouldReconnect);
-      if (shouldReconnect) initWhatsApp();
+      const statusCode = (lastDisconnect.error as Boom)?.output?.statusCode;
+      // 🛡️ Stabilize: Don't auto-reconnect if QR attempts have timed out (408)
+      // This prevents the infinite crashing loop observed in terminal.
+      const shouldReconnect = statusCode !== DisconnectReason.loggedOut && statusCode !== 408;
+      
+      console.log(`🔌 WhatsApp connection closed [Status: ${statusCode}]. Reconnecting: ${shouldReconnect}`);
+      
+      if (shouldReconnect) {
+        initWhatsApp();
+      } else if (statusCode === 408) {
+        console.warn('⚠️ WhatsApp QR Timeout: Automatic reconnection suspended to preserve resources.');
+      }
     } else if (connection === 'open') {
       console.log('✅ WhatsApp gateway connected successfully');
     }

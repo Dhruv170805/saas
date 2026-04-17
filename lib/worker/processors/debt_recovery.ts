@@ -11,16 +11,16 @@ export async function processDebtRecovery() {
   logger.info('💸 Starting daily debt recovery scan...');
 
   try {
-    // 1. Find UNPAID orders from 7 days ago
-    // We look for orders created between 7.5 and 6.5 days ago to ensure we catch them once
+    // 1. Find UNPAID orders from 7 days ago that haven't received a reminder yet
     const sql = `
       SELECT o.*, t.name as restaurant_name 
       FROM orders o
       JOIN tenants t ON o.tenant_id = t.id
       WHERE o.status = 'UNPAID' 
         AND o.customer_phone IS NOT NULL
-        AND o.created_at >= NOW() - INTERVAL '8 days'
+        AND o.reminder_sent_at IS NULL
         AND o.created_at <= NOW() - INTERVAL '7 days'
+      LIMIT 50
     `;
     
     // Using 'SYSTEM' tenant context for global scan (bypasses RLS)
@@ -33,7 +33,11 @@ export async function processDebtRecovery() {
       
       try {
         await sendWhatsAppMessage(debt.customer_phone, message);
-        logger.info(`✅ Reminder sent to ${debt.customer_phone} for order #${debt.id}`);
+        
+        // 2. Mark as sent to prevent duplicate reminders
+        await query('SYSTEM', 'UPDATE orders SET reminder_sent_at = NOW() WHERE id = $1', [debt.id]);
+        
+        logger.info(`✅ Reminder sent and logged for ${debt.customer_phone} (Order #${debt.id})`);
       } catch (err) {
         logger.error(`❌ Failed to send reminder to ${debt.customer_phone}`, err);
       }

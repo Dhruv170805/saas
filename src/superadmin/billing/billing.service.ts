@@ -17,7 +17,7 @@ export class BillingService {
       );
 
       if (!reqRes.length || reqRes[0].status !== 'PENDING') {
-        throw new BadRequestException('Invalid or already processed request');
+        throw new Error('Invalid or already processed request');
       }
 
       const payment = reqRes[0];
@@ -30,7 +30,7 @@ export class BillingService {
 
       if (status === 'APPROVED') {
         // 3. Upsert Subscription (extend 30 days)
-        await query('SYSTEM', `
+        const subRes = await query<{ current_period_end: Date }>('SYSTEM', `
           INSERT INTO subscriptions (tenant_id, plan_id, status, current_period_start, current_period_end)
           VALUES ($1, $2, 'ACTIVE', NOW(), NOW() + INTERVAL '30 days')
           ON CONFLICT (tenant_id) DO UPDATE SET
@@ -38,7 +38,15 @@ export class BillingService {
             status = 'ACTIVE',
             current_period_end = GREATEST(subscriptions.current_period_end, NOW()) + INTERVAL '30 days',
             updated_at = NOW()
+          RETURNING current_period_end
         `, [payment.tenant_id, payment.plan_id]);
+
+        // 4. Synchronize Tenant Discovery Metadata (for Relentless Resilience fail-safe)
+        await query('SYSTEM', `
+          UPDATE tenants 
+          SET plan = $1, plan_expires_at = $2, updated_at = NOW() 
+          WHERE id = $3
+        `, [payment.plan_id, subRes[0].current_period_end.toISOString(), payment.tenant_id]);
       }
 
       await query('SYSTEM', 'COMMIT');
@@ -54,12 +62,13 @@ export class BillingService {
    * List pending manual payments.
    */
   async getPendingPayments() {
-    return query('SYSTEM', `
+    const data = await query('SYSTEM', `
       SELECT pr.*, t.name as tenant_name 
       FROM payment_requests pr
       JOIN tenants t ON pr.tenant_id = t.id
       WHERE pr.status = 'PENDING'
       ORDER BY pr.created_at ASC
     `);
+    return { success: true, data };
   }
 }

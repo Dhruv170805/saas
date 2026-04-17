@@ -58,12 +58,13 @@ function addSecurityHeaders(res: NextResponse): NextResponse {
 }
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
+  const pathname = req.nextUrl.pathname.replace(/\/$/, '') || '/'
   const host = req.headers.get('host') || ''
 
   // ── 1. Plane Detection ──────────────────────────────────────────────────
   // Check if we are on the HQ Control Plane (hq.nexuspos.local)
-  const isHqPlane = host.startsWith('hq.') || host === 'hq.localhost'
+  // During local development, we also trigger HQ logic if the path starts with /hq
+  const isHqPlane = host.startsWith('hq.') || host === 'hq.localhost' || pathname === '/hq' || pathname.startsWith('/hq/')
 
   // Always add security headers
   const res = NextResponse.next()
@@ -71,16 +72,25 @@ export function middleware(req: NextRequest) {
 
   // ── 2. HQ Control Plane Logic ───────────────────────────────────────────
   if (isHqPlane) {
-    // Public paths for HQ (Login/Metrics)
-    if (pathname === '/hq/login' || pathname.startsWith('/hq/api/superadmin/login')) {
+    // Public paths for HQ (Executive Identity / Health / Metrics)
+    // We check normalized pathname
+    const isPublicHqPath = 
+      pathname === '/hq/login' || 
+      pathname.startsWith('/hq/api/superadmin/auth/login') ||
+      pathname === '/api/health' ||
+      pathname === '/api/metrics'
+
+    if (isPublicHqPath) {
       return res
     }
 
     const superToken = req.cookies.get('super_token')?.value
     if (!superToken) {
-      if (pathname.startsWith('/hq/api/')) {
+      // API requests within HQ return 401
+      if (pathname.includes('/api/')) {
         return NextResponse.json({ error: 'Unauthorized HQ Access' }, { status: 401 })
       }
+      // UI requests redirect to the premium HQ login gateway
       const loginUrl = req.nextUrl.clone()
       loginUrl.pathname = '/hq/login'
       return NextResponse.redirect(loginUrl)

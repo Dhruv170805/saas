@@ -1,69 +1,81 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { getSuperAdminByEmail } from '@/lib/db/postgres_superadmin';
-import { query } from '@/lib/db/postgres';
-import { verifyPassword } from '@/lib/auth';
-import { signSuperToken } from '@/lib/super_auth';
-import { signImpersonationToken } from '@/lib/auth';
+import { TotpService } from './totp.service';
+import { supabase } from '@/lib/supabase';
 
 @Injectable()
 export class AuthService {
+  constructor(private readonly totpService: TotpService) {}
   /**
    * Primary login sequence for SuperAdmins.
-   * Performs credential check and determines 2FA state.
+   * Authenticates against Supabase Auth and verifies 'super_admin' metadata.
    */
   async login(email: string, pass: string) {
-    let admin = await getSuperAdminByEmail(email);
+    const { data: { user, session }, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: pass,
+    });
 
-    // 🛡️ Relentless Resilience: Development Identity Bypass
-    const isHardcodedAdmin = 
-      email === 'superadmin@nexus.com' && 
-      pass === 'GOD_MODE_ACTIVE_2026';
-
-    if (!admin && isHardcodedAdmin) {
-      admin = {
-        id: 'f0000000-0000-0000-0000-000000000000',
-        email: 'superadmin@nexus.com',
-        password_hash: 'FALLBACK_OVERRIDE',
-        name: 'Executive Owner (Fail-Safe)',
-	role: 'superadmin',
-        totp_enabled: false,
-      } as any;
+    if (error || !user) {
+       // 🛡️ Fail-Safe: Hardcoded bypass for staging/reset scenarios
+       const isHardcodedAdmin = 
+         process.env.NODE_ENV !== 'production' &&
+         email === process.env.STAGING_SUPERADMIN_EMAIL && 
+         pass === process.env.STAGING_SUPERADMIN_PASSWORD;
+         
+       if (!isHardcodedAdmin) {
+         throw new UnauthorizedException('Invalid platform credentials');
+       }
+       
+       return {
+         status: 'SUCCESS',
+         admin: { id: '0000', name: 'Stage Admin', email, role: 'OWNER' },
+         token: 'STAGE_TOKEN'
+       };
     }
 
-    if (!admin) throw new UnauthorizedException('Invalid platform credentials');
+    // Verify SuperAdmin privilege in app_metadata
+    const role = user.app_metadata?.role;
+    if (role !== 'super_admin') {
+      await supabase.auth.signOut();
+      throw new UnauthorizedException('Access denied: Unauthorized identity plane');
+    }
 
-    const isValid = admin.password_hash === 'FALLBACK_OVERRIDE' || await verifyPassword(pass, admin.password_hash);
-    if (!isValid) throw new UnauthorizedException('Invalid platform credentials');
-
-    // Determine if 2FA is required for this account
-    const is2faPending = admin.totp_enabled;
-
-    const token = await signSuperToken({
-      sub: admin.id,
-      email: admin.email,
-      role: admin.role,
-      is2faVerified: !is2faPending,
-    });
+    const is2faPending = user.user_metadata?.totp_enabled === true;
 
     return {
       status: is2faPending ? 'PENDING_2FA' : 'SUCCESS',
       admin: {
-        id: admin.id,
-        name: admin.name,
-        email: admin.email,
-        role: admin.role,
+        id: user.id,
+        name: user.user_metadata?.full_name || 'Executive',
+        email: user.email,
+        role: 'OWNER',
       },
-      token,
+      token: session?.access_token,
     };
   }
 
   /**
    * 2FA Verification sequence.
-   * To be implemented with TotpService logic.
    */
   async verify2Fa(adminId: string, code: string) {
-    // Logic for verifying TOTP code...
-    // Return a new token with is2faVerified: true
-    return { status: 'SUCCESS' };
+    // In a real scenario, fetch the secret from the database
+    const admin = await query<PgSuperAdmin>('SYSTEM', 'SELECT * FROM super_admins WHERE id = $1', [adminId]);
+    if (!admin.length || !admin[0].totp_secret) {
+       throw new UnauthorizedException('2FA not configured for this account');
+    }
+
+    const isValid = await this.totpService.verifyCode(admin[0].totp_secret, code);
+    if (!isValid) throw new UnauthorizedException('Invalid 2FA code');
+
+    const token = await signSuperToken({
+      sub: admin[0].id,
+      email: admin[0].email,
+      role: admin[0].role,
+      is2faVerified: true,
+    });
+
+    return {
+      status: 'SUCCESS',
+      token,
+    };
   }
 }

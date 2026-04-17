@@ -1,51 +1,52 @@
-import { NextResponse } from 'next/server';
-import { query } from '@/lib/db/postgres';
-import { getSuperAdminSession } from '@/lib/next_auth_utils';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * Platform-Wide Analytics Engine (Global View).
- * Aggregates high-velocity financial and operational data across all tenants.
+ * NEXUS Bridge: Analytics Proxy.
+ * Forwards requests to the refactored NestJS Control Plane (Port 4000).
+ * [REAL DATA]: Prioritizes live backend data over simulation mockups.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const isSimulationEnabled = process.env.PLATFORM_SIMULATION === 'true';
+
   try {
-    const session = await getSuperAdminSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    // 1. Total Revenue (Last 30 Days)
-    const revenueRes = await query<{ total: string }>('SYSTEM', `
-      SELECT SUM(total) as total 
-      FROM orders 
-      WHERE status = 'PAID' AND created_at >= NOW() - INTERVAL '30 days'
-    `);
-
-    // 2. Active Tenants by Plan
-    const tenantsByPlan = await query<{ plan: string, count: string }>('SYSTEM', `
-      SELECT plan, COUNT(*) as count 
-      FROM tenants 
-      GROUP BY plan
-    `);
-
-    // 3. Global Order Velocity (daily counts for the last 7 days)
-    const dailyOrders = await query<{ date: string, count: string }>('SYSTEM', `
-      SELECT DATE(created_at) as date, COUNT(*) as count
-      FROM orders
-      WHERE created_at >= NOW() - INTERVAL '7 days'
-      GROUP BY DATE(created_at)
-      ORDER BY DATE(created_at) ASC
-    `);
-
-    // 4. Critical Health: Database size & connection count (simplified)
-    const dbMetrics = await query<{ size: string }>('SYSTEM', "SELECT pg_size_pretty(pg_database_size(current_database())) as size");
-
-    return NextResponse.json({
-      revenue30d: revenueRes[0].total || '0',
-      tenants: tenantsByPlan,
-      velocity: dailyOrders,
-      dbSize: dbMetrics[0].size
+    const backendUrl = `http://localhost:4000/api/superadmin/analytics`;
+    
+    const response = await fetch(backendUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': req.headers.get('Authorization') || '',
+        'Cookie': req.headers.get('Cookie') || '',
+      },
+      next: { revalidate: 0 }
     });
 
-  } catch (err) {
-    console.error('Global analytics error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    if (!response.ok) throw new Error(`Backend Error: ${response.status}`);
+
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+
+  } catch (err: any) {
+    if (isSimulationEnabled) {
+      console.warn('NEXUS_BRIDGE: [SIMULATION_ACTIVE] Backend unreachable. Engaging fallback.');
+      return NextResponse.json({ 
+        success: true, 
+        isSimulation: true,
+        data: {
+          tenants: [
+            { plan: 'Enterprise', count: '42' },
+            { plan: 'Professional', count: '85' },
+            { plan: 'Starter', count: '15' }
+          ],
+          revenue30d: (85000 * 85).toString(),
+          growth: '+12.4%',
+          apiPerformance: '99.98%',
+          activeUsers: '12.5k',
+          errorRate: '0.04%'
+        } 
+      });
+    }
+
+    console.error('NEXUS_BRIDGE_CRITICAL: Analytics Engine unreachable.', err.message);
+    return NextResponse.json({ success: false, error: 'Control Plane Link failure' }, { status: 502 });
   }
 }

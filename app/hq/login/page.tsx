@@ -1,22 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GlassCard } from '../components/ui/GlassCard';
+import { ShieldCheck, Fingerprint, Lock, Mail, Loader2, Cpu } from 'lucide-react';
 
 /**
- * NEXUS COMMAND Identity Plane.
- * Glassmorphic, High-Fidelity Executive Authentication.
- * Communicates with the NestJS Auth Engine at Port 4000.
+ * NEXUS COMMAND: Executive Identity Gateway.
+ * High-fidelity, Vanilla CSS powered executive authentication portal.
  */
 export default function HQLoginPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [totp, setTotp] = useState('');
   const [totpRequired, setTotpRequired] = useState(false);
+  const [totp, setTotp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [bootSequence, setBootSequence] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setBootSequence(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -24,8 +32,6 @@ export default function HQLoginPage() {
     setError('');
 
     try {
-      // POST directly to the proxied HQ Auth endpoint
-      // Next.js rewrites /hq/api/superadmin/* to localhost:4000/api/superadmin/*
       const res = await fetch('/hq/api/superadmin/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -41,116 +47,141 @@ export default function HQLoginPage() {
       }
 
       if (!res.ok) {
-        setError(data.message || 'Access Denied: Check credentials.');
+        setError(data.error || 'Identity Verification Failed');
         setLoading(false);
         return;
       }
 
-      // Deployment success: Redirection to command analytics
       router.push('/hq');
       router.refresh();
     } catch (err) {
-      setError('HQ API Link Failure: Check backend status.');
+      setError('Bridge Failure: Could not reach Identity Plane.');
       setLoading(false);
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#020617] relative overflow-hidden font-sans selection:bg-sky-500/30">
-      {/* Cinematic Background Elements */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-sky-600/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
-      </div>
+    <div className="hq-auth-canvas">
+      {/* Background Cinematic Atmos */}
+      <div className="hq-auth-glow-1" />
+      <div className="hq-auth-glow-2" />
+      
+      <AnimatePresence>
+        {bootSequence && (
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            className="hq-auth-card"
+          >
+            <GlassCard className="hq-p-10" hoverGlow>
+              <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                <motion.div 
+                  initial={{ rotate: -180, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  transition={{ duration: 1, type: 'spring' }}
+                  className="hq-flex hq-items-center hq-justify-center"
+                  style={{ 
+                    width: '4rem', 
+                    height: '4rem', 
+                    background: 'rgba(0,242,255,0.05)', 
+                    borderRadius: '1.25rem', 
+                    border: '1px solid rgba(0,242,255,0.1)',
+                    margin: '0 auto 1.5rem auto',
+                    boxShadow: 'inset 0 0 15px rgba(0,242,255,0.1)'
+                  }}
+                >
+                  <Cpu size={28} className="hq-text-cyan" />
+                </motion.div>
+                <h1 className="hq-text-3xl hq-font-black hq-text-white hq-tracking-tighter" style={{ margin: 0 }}>
+                  NEXUS <span className="hq-text-cyan">COMMAND</span>
+                </h1>
+                <p className="hq-text-xs hq-font-black hq-text-dim hq-uppercase hq-tracking-widest" style={{ opacity: 0.4, marginTop: '0.5rem' }}>
+                  Identity Gateway Sector 7
+                </p>
+              </header>
 
-      <div className="w-full max-w-md p-8 relative z-10">
-        <div className="bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-[32px] p-10 shadow-2xl relative overflow-hidden group">
-          {/* Subtle shine effect */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-          
-          <div className="text-center mb-10 relative">
-            <div className="w-16 h-16 bg-sky-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-sky-500/20 shadow-inner">
-              <span className="text-2xl">🛡️</span>
-            </div>
-            <h1 className="text-3xl font-black text-white tracking-tighter mb-2">
-              NEXUS <span className="bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">COMMAND</span>
-            </h1>
-            <p className="text-slate-500 text-sm font-medium tracking-wide">EXECUTIVE IDENTITY GATEWAY</p>
-          </div>
+              <form onSubmit={handleLogin}>
+                 {!totpRequired ? (
+                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                     <div className="hq-input-group">
+                        <label className="hq-text-xs hq-font-black hq-text-dim hq-uppercase hq-tracking-widest">Executive Email</label>
+                        <div style={{ position: 'relative' }}>
+                           <Mail size={16} className="hq-text-dim" style={{ position: 'absolute', left: '1rem', top: '1rem', opacity: 0.5, pointerEvents: 'none' }} />
+                           <input 
+                            type="email" 
+                            className="hq-input hq-font-black" 
+                            style={{ paddingLeft: '3rem' }}
+                            placeholder="authorized_entity@nexus.io"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                           />
+                        </div>
+                     </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
-            {!totpRequired ? (
-              <>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Executive Email</label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-slate-800/50 border border-white/5 rounded-2xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all placeholder:text-slate-600"
-                    placeholder="admin@nexus.io"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Secure Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-800/50 border border-white/5 rounded-2xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all placeholder:text-slate-600"
-                    placeholder="••••••••••••"
-                  />
-                </div>
-              </>
-            ) : (
-              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="bg-sky-500/10 border border-sky-500/20 p-4 rounded-2xl mb-2 text-center">
-                  <p className="text-sky-400 text-xs font-bold uppercase tracking-widest">🔐 Multi-Factor Authentication</p>
-                  <p className="text-sky-400/60 text-[10px] mt-1 italic">Enter the 6-digit code from your authenticator app</p>
-                </div>
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  maxLength={6}
-                  value={totp}
-                  onChange={(e) => setTotp(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-slate-900/50 border-2 border-sky-500/30 rounded-2xl p-6 text-white text-4xl text-center font-mono tracking-[0.4em] focus:outline-none focus:border-sky-500 transition-all placeholder:text-slate-800"
-                  placeholder="000000"
-                />
-              </div>
-            )}
+                     <div className="hq-input-group">
+                        <label className="hq-text-xs hq-font-black hq-text-dim hq-uppercase hq-tracking-widest">Secure Credentials</label>
+                        <div style={{ position: 'relative' }}>
+                           <Lock size={16} className="hq-text-dim" style={{ position: 'absolute', left: '1rem', top: '1rem', opacity: 0.5, pointerEvents: 'none' }} />
+                           <input 
+                            type="password" 
+                            className="hq-input hq-font-black" 
+                            style={{ paddingLeft: '3rem' }}
+                            placeholder="••••••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                           />
+                        </div>
+                     </div>
+                   </motion.div>
+                 ) : (
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="hq-flex-col hq-gap-4 hq-p-6" style={{ background: 'rgba(0,242,255,0.03)', border: '1px solid rgba(0,242,255,0.1)', borderRadius: '1rem', marginBottom: '2rem', textAlign: 'center' }}>
+                       <Fingerprint size={32} className="hq-text-cyan" style={{ margin: '0 auto' }} />
+                       <div>
+                          <p className="hq-text-sm hq-font-black hq-text-white hq-uppercase hq-tracking-widest">MFA Verification</p>
+                          <p className="hq-text-xs hq-text-dim" style={{ marginTop: '0.25rem' }}>Enter the 6-digit synchronization code</p>
+                       </div>
+                       <input 
+                        type="text" 
+                        maxLength={6}
+                        autoFocus
+                        style={{ background: 'transparent', border: 'none', borderBottom: '2px solid var(--glow-cyan)', width: '100%', textAlign: 'center', fontSize: '2rem', fontWeight: 900, color: 'white', letterSpacing: '0.5em', outline: 'none' }}
+                        value={totp}
+                        onChange={(e) => setTotp(e.target.value.replace(/\D/g, ''))}
+                       />
+                    </motion.div>
+                 )}
 
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-500 text-xs text-center font-bold">
-                ⚠️ {error}
-              </div>
-            )}
+                 {error && (
+                   <div style={{ padding: '0.75rem', borderRadius: '0.75rem', background: 'rgba(255,59,59,0.1)', border: '1px solid rgba(255,59,59,0.1)', color: 'var(--alert-red)', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', textAlign: 'center', marginBottom: '1.5rem' }}>
+                      ⚠️ {error}
+                   </div>
+                 )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-black rounded-2xl transition-all shadow-lg shadow-sky-500/20 transform active:scale-[0.98] mt-4"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-slate-950/20 border-t-slate-950 rounded-full animate-spin" />
-                  VERIFYING...
-                </span>
-              ) : (
-                totpRequired ? 'AUTHORIZE HQ ACCESS' : 'INITIALIZE COMMAND BRIDGE'
-              )}
-            </button>
-          </form>
+                 <button type="submit" disabled={loading} className="hq-login-btn hq-font-black">
+                   {loading ? (
+                     <div className="hq-flex hq-items-center hq-justify-center hq-gap-2">
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>Initializing...</span>
+                     </div>
+                   ) : (
+                     'Initialize Command Bridge'
+                   )}
+                 </button>
+              </form>
 
-          <div className="mt-8 text-center text-slate-600">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em]">GOD-MODE PLATFORM GOVERNANCE</p>
-          </div>
-        </div>
-      </div>
+              <footer style={{ marginTop: '2rem', textAlign: 'center' }}>
+                <div style={{ height: '1px', background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.05), transparent)', marginBottom: '1.5rem' }} />
+                <p className="hq-text-xs hq-font-black hq-text-dim hq-uppercase hq-tracking-[0.4em]" style={{ fontSize: '8px' }}>
+                  Secure_Link_Node_0x7F
+                </p>
+              </footer>
+            </GlassCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

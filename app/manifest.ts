@@ -3,15 +3,16 @@ import { getTenantBySlug } from '@/lib/db/tenants'
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
     // Graceful fallback during build-time if MongoDB is not configured or unreachable
-    const defaultData = { name: 'NEXUS POS', theme: '#f37c22' }
+    let defaultData = { name: 'NEXUS COMMAND', theme: '#0ea5e9' }
     try {
-        const tenant = await getTenantBySlug('default')
-        if (tenant) {
-            defaultData.name = tenant.name
-            defaultData.theme = tenant.theme.primary
+        // Attempt to fetch platform branding, but fall back gracefully to Control Plane defaults
+        const tenant = await getTenantBySlug('default').catch(() => null);
+        if (tenant && tenant.theme) {
+            defaultData.name = tenant.name || defaultData.name;
+            defaultData.theme = tenant.theme.primary || defaultData.theme;
         }
     } catch (e) {
-        // Ignore db errors during next build phase
+        console.warn('⚠️ Manifest_Hydration_Failure: Defaulting to NEXUS_COMMAND branding.');
     }
 
     return {

@@ -11,7 +11,7 @@ const customJestConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
-  testMatch: ['**/tests/**/*.test.ts'],
+  testMatch: ['**/tests/**/*.test.ts', '**/*.spec.ts'],
   transform: {
     '^.+\\.(t|j)sx?$': ['ts-jest', {
       tsconfig: 'tsconfig.json',

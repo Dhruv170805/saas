@@ -689,10 +689,9 @@ select.form-input {
 }
 
 /* ─────────────────────────────────────
-   § 11. NAVBAR
-   ───────────────────────────────────── */
+/* ── NAVIGATION_SURFACE (IDENTITY) ────────────────────────────────── */
 
-.navbar {
+.hq-nav-surface {
   background: rgba(10, 10, 12, 0.4);
   -webkit-backdrop-filter: blur(48px) saturate(200%);
   backdrop-filter: blur(48px) saturate(200%);
@@ -1186,7 +1185,7 @@ select.form-input {
     font-size: 1.2rem;
   }
 
-  .navbar {
+  .hq-nav-surface {
     padding: 0 var(--space-4);
     height: 3.25rem;
   }
@@ -1257,7 +1256,7 @@ select.form-input {
     padding: var(--space-3);
   }
 
-  .navbar {
+  .hq-nav-surface {
     padding: 0 var(--space-3);
   }
 }
